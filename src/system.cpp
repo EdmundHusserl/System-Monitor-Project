@@ -18,13 +18,12 @@ using std::string;
 using std::vector;
 
 System::System() : cpu_(Processor()) {
-  vector<int> processes = LinuxParser::Pids();
-  vector<Process> active_procs;
-  for (auto pid : processes) {
-    auto pid_active = std::find(processes.begin(), processes.end(), pid);
-    if (pid_active != processes.end()) active_procs.push_back(Process(pid));
+  vector<int> pids = LinuxParser::Pids();
+  vector<Process> procs;
+  for (auto pid : pids) {
+    procs.push_back(Process(pid));
   }
-  this->processes_ = active_procs;
+  this->processes_ = procs;
 };
 
 // DONE: Return the system's CPU
