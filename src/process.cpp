@@ -24,7 +24,8 @@ int Process::Pid() const { return this->pid_; }
 // TODO: Return this process's CPU utilization
 float Process::CpuUtilization() {
   long system_jiffies = LinuxParser::Jiffies();
-  long process_jiffies = LinuxParser::ActiveJiffies(this->Pid());
+  long process_jiffies =
+      static_cast<float>(LinuxParser::ActiveJiffies(this->Pid()));
   return process_jiffies / system_jiffies;
 };
 
@@ -38,14 +39,10 @@ string Process::Ram() { return LinuxParser::Ram(this->Pid()); }
 string Process::User() const { return this->user_; }
 
 // TODO: Return the age of this process (in seconds)
-long int Process::UpTime() { LinuxParser::UpTime(this->Pid()); }
+long int Process::UpTime() { return LinuxParser::UpTime(this->Pid()); }
 
 // TODO: Overload the "less than" comparison operator for Process objects
 bool Process::operator<(Process const& p) {
-  string p1_mem, p2_mem;
-  std::istringstream p1_ram(this->Ram());
-  std::istringstream p2_ram(LinuxParser::Ram(p.Pid()));
-  p1_ram >> p1_mem;
-  p2_ram >> p2_mem;
-  return std::stof(p1_mem) > std::stof(p2_mem);
+  string p2_ram = LinuxParser::Ram(p.Pid());
+  return std::stof(this->Ram()) > std::stof(p2_ram);
 }

@@ -52,7 +52,6 @@ string LinuxParser::Kernel() {
   std::ifstream stream(kProcDirectory + kVersionFilename);
   if (stream.is_open()) {
     std::getline(stream, line);
-    std::replace(line.begin(), line.end(), ' ', '_');
     std::istringstream linestream(line);
     linestream >> os >> version >> kernel;
   }
@@ -65,7 +64,7 @@ vector<int> LinuxParser::Pids() {
   const string &proc_dir = LinuxParser::kProcDirectory;
 
   auto is_convertible = [](const std::string str) -> bool {
-    for (int i = 0; i < str.length(); i++) {
+    for (unsigned long i = 0; i < str.length(); i++) {
       if (!isdigit(str[i])) return false;
     }
     return true;
@@ -100,14 +99,14 @@ float LinuxParser::MemoryUtilization() {
       }
     }
   }
-  return value_mem_t - value_mem_f;
+  return (value_mem_t - value_mem_f) / (value_mem_t);
 }
 
 // DONE: Read and return the system uptime
 long LinuxParser::UpTime() {
   string up, idle;
   string line;
-  float uptime{0};
+  long uptime{0};
   std::ifstream stream(kProcDirectory + kUptimeFilename);
   if (stream.is_open()) {
     std::getline(stream, line);
@@ -115,7 +114,7 @@ long LinuxParser::UpTime() {
     linestream >> up >> idle;
     if (up.length()) uptime = std::stof(up);
   }
-  return static_cast<long>(std::floor(uptime));
+  return uptime;
 };
 
 // DONE: Read and return the number of jiffies for the system
@@ -152,39 +151,44 @@ long LinuxParser::ActiveJiffies(int pid) {
 
 // DONE: Read and return the number of active jiffies for the system
 long LinuxParser::ActiveJiffies() {
+  long a_jiffies{0};
   std::ifstream file_stream{kProcDirectory + kStatFilename};
   if (file_stream.is_open()) {
-    string line, user, nice, system, idle, iowait, irq, softirq, steal;
+    string line, cpu_no, user, nice, system, idle, iowait, irq, softirq, steal;
     std::getline(file_stream, line);
     std::istringstream linestream(line);
-    linestream >> user >> nice >> system >> idle >> iowait >> irq >> softirq >>
-        steal;
-    return std::stol(user) + std::stol(nice) + std::stol(system) +
-           std::stol(irq) + std::stol(softirq) + std::stol(steal);
+    linestream >> cpu_no >> user >> nice >> system >> idle >> iowait >> irq >>
+        softirq >> steal;
+    a_jiffies = std::stol(user) + std::stol(nice) + std::stol(system) +
+                std::stol(irq) + std::stol(softirq) + std::stol(steal);
   }
+  return a_jiffies;
 };
 
 // DONE: Read and return the number of idle jiffies for the system
 long LinuxParser::IdleJiffies() {
+  long i_jiffies{0};
   std::ifstream file_stream{kProcDirectory + kStatFilename};
   if (file_stream.is_open()) {
     string line, unused_token, idle, iowait;
     std::getline(file_stream, line);
     std::istringstream linestream(line);
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
       linestream >> unused_token;
     }
     linestream >> idle >> iowait;
-    return std::stol(idle) + std::stol(iowait);
+    i_jiffies = std::stol(idle) + std::stol(iowait);
   }
+  return i_jiffies;
 }
-// TODO: Read and return CPU utilization
+
+// Done: Read and return CPU utilization
 vector<string> LinuxParser::CpuUtilization() {
   vector<string> cpus;
   long non_idle = LinuxParser::ActiveJiffies();
   long idle = LinuxParser::IdleJiffies();
-  long usage = non_idle / (non_idle + idle);
-  cpus.push_back(std::to_string(usage) + "%");
+  auto usage = (static_cast<float>(non_idle) / (non_idle + idle));
+  cpus.push_back(std::to_string(usage));
   return cpus;
 }
 
@@ -240,7 +244,6 @@ string LinuxParser::Command(int pid) {
 
 // DONE: Read and return the memory used by a process
 string LinuxParser::Ram(int pid) {
-  string ram{"0 MB"};
   if (process_is_active(pid)) {
     std::ifstream stream(kProcDirectory + "/" + std::to_string(pid) +
                          kStatusFilename);
@@ -251,14 +254,16 @@ string LinuxParser::Ram(int pid) {
         std::istringstream linestream(line);
         while (linestream >> key >> value) {
           if (key == "VmSize") {
-            auto ram_in_mb = std::stof(value) / 100;
-            return std::to_string(ram_in_mb) + " MB";
+            std::ostringstream r;
+            float ram_in_mb = std::stof(value) / 1000;
+            r << std::fixed << std::setprecision(2) << ram_in_mb;
+            return r.str();
           }
         }
       }
     }
   }
-  return ram;
+  return "0";
 }
 
 // DONE: Read and return the user ID associated with a process

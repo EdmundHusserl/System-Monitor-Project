@@ -1,5 +1,6 @@
 #include "processor.h"
 
+#include <iomanip>
 #include <sstream>
 #include <string>
 
@@ -8,8 +9,6 @@
 // DONE: Return the aggregate CPU utilization
 float Processor::Utilization() {
   auto cpus = LinuxParser::CpuUtilization();
-  std::istringstream cpu_info(cpus.size() > 0 ? cpus[0] : "0 %");
-  std::string cpu_utilization;
-  cpu_info >> cpu_utilization;
+  std::string cpu_utilization = cpus.size() > 0 ? cpus[0] : "0";
   return std::stof(cpu_utilization);
 };

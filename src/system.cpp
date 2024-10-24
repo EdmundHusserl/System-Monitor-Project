@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <set>
 #include <string>
@@ -16,19 +17,21 @@ using std::size_t;
 using std::string;
 using std::vector;
 
-System::System() : cpu_(Processor()) { this->processes_ = Processes(); }
+System::System() : cpu_(Processor()) {
+  vector<int> processes = LinuxParser::Pids();
+  vector<Process> active_procs;
+  for (auto pid : processes) {
+    auto pid_active = std::find(processes.begin(), processes.end(), pid);
+    if (pid_active != processes.end()) active_procs.push_back(Process(pid));
+  }
+  this->processes_ = active_procs;
+};
 
 // DONE: Return the system's CPU
 Processor& System::Cpu() { return cpu_; }
 
 // DONE: Return a container composed of the system's processes
-vector<Process>& System::Processes() {
-  vector<Process> processes;
-  for (auto& pid : LinuxParser::Pids()) {
-    processes.push_back(Process(pid));
-  }
-  return processes;
-};
+vector<Process>& System::Processes() { return this->processes_; };
 
 // DONE: Return the system's kernel identifier (string)
 std::string System::Kernel() { return LinuxParser::Kernel(); }
