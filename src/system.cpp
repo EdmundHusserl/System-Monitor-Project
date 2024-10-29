@@ -23,6 +23,8 @@ System::System() : cpu_(Processor()) {
   for (auto pid : pids) {
     procs.push_back(Process(pid));
   }
+  std::sort(procs.begin(), procs.end(),
+            [](Process p1, Process p2) -> bool { return p1 < p2; });
   this->processes_ = procs;
 };
 
