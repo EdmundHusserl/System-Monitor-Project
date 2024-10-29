@@ -44,5 +44,5 @@ long int Process::UpTime() { return LinuxParser::UpTime(this->Pid()); }
 // TODO: Overload the "less than" comparison operator for Process objects
 bool Process::operator<(Process const& p) {
   Process p2 = p;
-  return this->CpuUtilization() < p2.CpuUtilization();
+  return this->CpuUtilization() > p2.CpuUtilization();
 }
